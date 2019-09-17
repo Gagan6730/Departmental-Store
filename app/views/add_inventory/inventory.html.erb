@@ -1,0 +1,119 @@
+<html>
+<head>
+  <link rel="stylesheet" href="store_controller.scss">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <%= stylesheet_link_tag 'application' %>
+
+</head>
+<body>
+<div id="DashboardLinksColumn" class="sideElement">
+  <hr>
+  <%= link_to 'Billing', "/user/billing" %>
+  <hr>
+  <div class=" active"><%= link_to 'Inventory', "/dashboard/inventory" %></div>
+  <hr>
+  <%= link_to 'Orders', "/user/orders" %>
+  <hr>
+  <%= link_to 'Store Profile', "/dashboard/storedetails/" %>
+  <hr>
+</div>
+<div class="mainContent" id="main">
+  <div class="success">Your changes have have successfully saved</div>
+  <div class="error">Error occured, changes not saved</div>
+  <h1> Inventory </h1>
+  <br>
+  <%= form_tag "/dashboard/inventory", :method => :get do %>
+    <!--  <div class='control-group'>-->
+    <%#=f.label "Category", class: 'control-label'%>
+    <!--    <div class="controls">-->
+    <%#=f.select(:category, options_for_select(:category_options_for_drop_down)) %>
+    <!--    </div>-->
+    <!--  </div>-->
+    <div>
+    <%= select("search", "category_id", @categories.collect {|c| [c.category_name.titleize, c.id]}, {prompt: 'Select Category'}, class:'search search-item details') %>
+
+    <%#= select_tag(:category_term, options_for_select(:category_term_options)) %>
+    <p class="search">
+      <%= text_field_tag :search_term  ,nil, placeholder: 'Search Item', class: 'search-item' %>
+      <%= submit_tag "Search", :method => :post , class: 'update search-item'%>
+    </p>
+    </div>
+    <br>
+
+    <h3>Available Items</h3>
+    <table class='border_table' border="1">
+      <thead>
+      <tr>
+        <th>Item Id</th>
+        <th>Product Name</th>
+        <th>Available Quantity</th>
+        <th>Price</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+      </thead>
+      <tbody id="independent_tbody">
+      <% @filtered_catalog_items.each do |item| %>
+        <tr>
+          <td class="id_col_ind"><%= item.id %></td>
+          <td><%= item.name %></td>
+          <td><%= item.qty %></td>
+          <td><%= item.price %></td>
+          <td><%= link_to('Edit', edit_catalog_item_path(item)) %></td>
+          <td><%= link_to('Delete', catalog_item_path(item), html_options = {method: :delete}) %></td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+    <%= will_paginate @filtered_catalog_items %>
+    <br>
+  <% end %>
+  <div>
+  <input id="add_inventory" type="button" value="Add new Inventory" class="update search-item"/>
+  </div>
+<script>
+    $(function(){
+
+        var cat_id = '<%= @cat_search.to_s %>' + "";
+        if (cat_id != null && cat_id != "") {
+            var cat_id_int = parseInt(cat_id);
+            $("#search_category_id").val(cat_id_int);
+        }
+        var search_text = '<%= @text_search.to_s %>' + "";
+        if (search_text != null && search_text != "") {
+            $("#search_term").val(search_text);
+        }
+
+
+        $('.sideElement a').click(function() {
+            $(this).toggleClass('active');
+            $(this).toggleClass('inactive');
+        });
+
+        $('#add_inventory').click(function () {
+            window.location.href="/add_inventory/new"
+        });
+
+        var changes = <%= @changesMade %>;
+        changes = changes+"";
+
+        if (changes !="null") {
+            if (changes=="true") {
+                $('div.success').css("display", "inline");
+                $('div.error').css("display", "none");
+            }
+            else {
+                $('div.success').css("display", "none");
+                $('div.error').css("display", "inline");
+            }
+        }
+        else {
+            $('div.success').css("display", "none");
+            $('div.error').css("display", "none");
+        }
+
+    });
+</script>
+    </div>
+</body>
+</html>

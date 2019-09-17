@@ -1,0 +1,782 @@
+<html>
+<head>
+  <link rel="stylesheet" href="store_controller.scss">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <%= stylesheet_link_tag 'application' %>
+</head>
+
+<body>
+
+<div id="DashboardLinksColumn" class="sideElement">
+  <hr>
+  <div class=" active"><%= link_to 'Billing', "/user/billing" %></div>
+  <hr>
+  <%= link_to 'Inventory', "/dashboard/inventory" %>
+  <hr>
+  <%= link_to 'Orders', "/user/orders" %>
+  <hr>
+  <%= link_to 'Store Profile', "/dashboard/storedetails/" %>
+  <hr>
+</div>
+
+<div id="modal-parent">
+</div>
+
+<div class="mainContent" id="main">
+  <h1> Billing </h1>
+  <br>
+  <%= form_tag billing_path, :method => :post do %>
+    <!--  <div class='control-group'>-->
+    <%#=f.label "Category", class: 'control-label'%>
+    <!--    <div class="controls">-->
+    <%#=f.select(:category, options_for_select(:category_options_for_drop_down)) %>
+    <!--    </div>-->
+    <!--  </div>-->
+    <div>
+    <%= select("search", "category_id", @categories.collect {|c| [c.category_name.titleize, c.id]}, {prompt: 'Select Category'}, class:'search search-item details') %>
+
+    <%#= select_tag(:category_term, options_for_select(:category_term_options)) %>
+    <p class="search">
+      <%= text_field_tag :search_term ,nil, placeholder: 'Search Item' , class: 'search-item' %>
+      <%= submit_tag "Search",  :method => :post ,class: 'update search-item'%>
+    </p>
+    </div>
+    <br>
+
+    <h3>Available Items</h3>
+    <table class='border_table' border="1">
+      <thead>
+      <tr>
+        <th>Item Id</th>
+        <th>Product Name</th>
+        <th>Available Quantity</th>
+        <th>Price</th>
+        <th>Select</th>
+      </tr>
+      </thead>
+      <tbody id="independent_tbody">
+      <% @filtered_catalog_items.each do |item| %>
+        <tr>
+          <td class="id_col_ind"><%= item.id %></td>
+          <td><%= item.name %></td>
+          <td><%= item.qty %></td>
+          <td><%= item.price %></td>
+          <td><input class="independent_items" type="checkbox" name="selected_items[]" value="<%= item.id %>"></td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+    <%= will_paginate @filtered_catalog_items %>
+    <br>
+    <input id="add_to_cart" type="button" value="Add to cart" class="search-item update"/>
+
+    <br>
+    <br>
+    <br>
+    <h3>Your Cart</h3>
+    <hr>
+
+    <% info = Hash.new %>
+    <% counte = Hash.new %>
+    <% @cart_items.each do |item| %>
+      <% info[item.id] = item %>
+      <% if counte.key? item.id %>
+        <% counte[item.id] = counte[item.id] + 1 %>
+      <% else %>
+        <% counte[item.id] = 1 %>
+      <% end %>
+
+    <% end %>
+    <table id="cart_table_display" class='border_table' border="1">
+      <thead>
+      <tr>
+        <th>Item Id</th>
+        <th>Product Name</th>
+        <th>Added Quantity</th>
+        <th>Price</th>
+        <th>Select</th>
+      </tr>
+      </thead>
+      <tbody id="cart_tbody">
+      <% counte.each do |key, value| %>
+        <tr>
+          <td class="id_col"><%= key %></td>
+          <td><%= info[key].name %></td>
+          <td class="quant_col">  <%= number_field_tag("quant_col_value", value = value, options = {min: 1})%></td>
+          <td class="price_col"><%= info[key].price * value %></td>
+          <td><input class="cart_items" type="checkbox" name="selected_items_cart[]" value="<%= key %>"></td>
+        </tr>
+      <% end %>
+      </tbody>
+    </table>
+
+    <br>
+    <p class="details"> Customer Details </p>
+    <br>
+
+    <p class="details">Phone number* : <input id="customer_phone_number" type="number" class="detail"></p>
+    <br>
+    <p class="details">Name* : <input id="customer_name" type="text" class="detail"></p>
+    <br>
+    <br>
+    <br>
+    <input id="checkout_cart" type="button" value="Checkout" class="search-item update"/>
+    <input id="remove_from_cart" type="button" value="Remove From Cart" class="search-item update"/>
+    <input id="clear_cart" type="button" value="Clear Cart" class="search-item update"/>
+    </div>
+    <script>
+        $(function () {
+            var cat_id = '<%= @cat_search.to_s %>' + "";
+            if (cat_id != null && cat_id != "") {
+                var cat_id_int = parseInt(cat_id);
+                $("#search_category_id").val(cat_id_int);
+            }
+            var search_text = '<%= @text_search.to_s %>' + "";
+            if (search_text != null && search_text != "") {
+                $("#search_term").val(search_text);
+            }
+
+            var hash_price_item = new Object();
+            <%@filtered_catalog_items.each do |catalog_item|%>
+              hash_price_item[<%=catalog_item.id.to_s %>] = <%=catalog_item.price %>;
+            <%end %>
+
+
+            $("body").on('DOMSubtreeModified', "#cart_tbody", function() {
+                const $source2 = document.querySelectorAll('#quant_col_value');
+                $source2.forEach(function(rowQuant) {
+                    rowQuant.addEventListener('input', typeHandler) // register for oninput
+                    rowQuant.addEventListener('propertychange', typeHandler) // for IE8
+                });
+
+
+                $('#cart_tbody').children().on("dblclick", function () {
+                    arr = [];
+                    $(this).children('.id_col').each(function () {
+                        arr.push($(this).html());
+                    });
+                    $.post("/user/remove",
+                        {
+                            'selected_items_cart[]': arr
+                        },
+                        function (data, status) {
+
+                            for (var item in data) {
+                                var iter = 0;
+                                var a = $('#cart_tbody tr');
+                                var change_row = null;
+                                a.each(function () {
+                                    $(this).children('.id_col').each(function () {
+                                        if (parseInt($(this).html()) == parseInt(data[item].id)) {
+                                            iter = iter + 1;
+                                            change_row = $(this).parent();
+                                            return false;
+                                        }
+                                    })
+                                })
+
+                                if (iter == 0) {
+                                    var quantity_calculated = 1;
+                                    var price_calculated = quantity_calculated * parseFloat(data[item].price);
+                                    $('#cart_tbody').append('<tr><td class="id_col">' + data[item].id + '<td>' + data[item].name + '<td class="quant_col">' +
+                                        '<%= number_field_tag('quant_col_value', value = 1, options = {min: 1}).to_s %>'
+                                        + '<td class = "price_col">' + price_calculated + '<td><input class="cart_items" type="checkbox" name="selected_items_cart[]" value=' + data[item].id + '></tr>');
+                                }
+                                else {
+                                    change_row.each(function () {
+                                        $(this).children('.quant_col').each(function () {
+                                            $(this).children("#quant_col_value").each(function () {
+                                                exist_q_dom = $(this)
+                                                exist_q = $(this).val()
+                                            })
+                                            exist_q_dom.val(parseInt(exist_q) - 1);
+                                        })
+                                        $(this).children('.price_col').each(function () {
+                                            exist_p = $(this).html();
+                                            var prico = parseFloat(data[item].price);
+                                            var curr = parseFloat(exist_p);
+                                            var newValue = curr - prico;
+                                            $(this).html(newValue.toFixed(1));
+                                            if (parseInt(exist_p) - parseFloat(data[item].price) == 0) {
+                                                //alert("Remove this");
+                                                $(this).parent().remove();
+                                                $('#cart_table_display').trigger('rowAddOrRemove');
+                                            }
+                                        })
+                                    })
+                                }
+
+                            }
+
+                            $(".cart_items:checked").each(function () {
+                                $(this).prop("checked", false);
+                            });
+                        });
+
+                });
+            });
+
+            const $source = document.querySelectorAll('#quant_col_value');
+            //console.log($source);
+            //const $result = document.querySelector('#result');
+
+            const typeHandler = function(e) {
+                //$result.innerHTML = e.target.value;
+                //alert(e);
+                //console.log(e.srcElement.parentNode.parentNode);
+                //console.log(e.srcElement.parentNode.parentNode.childNodes);
+                if (e.target.value == '' || parseInt(e.target.value)==NaN) {
+                    if (e.srcElement.parentNode.parentNode.childNodes.length == 11) {
+                        e.srcElement.parentNode.parentNode.childNodes[7].innerHTML = '';
+                    }
+                    else {
+                        e.srcElement.parentNode.parentNode.childNodes[3].innerHTML = '';
+                    }
+                }
+                else {
+                    var changed_row_id = '';
+                    if (e.srcElement.parentNode.parentNode.childNodes.length == 11) {
+                        changed_row_id = e.srcElement.parentNode.parentNode.childNodes[1].innerHTML;
+                    }
+                    else {
+                        changed_row_id = e.srcElement.parentNode.parentNode.childNodes[0].innerHTML;
+                    }
+
+                    var changed_row_price = hash_price_item[changed_row_id];
+                    var new_quantity = parseInt(e.target.value);
+                    var changed_row_total_price = new_quantity*changed_row_price;
+                    if (e.srcElement.parentNode.parentNode.childNodes.length == 11) {
+                        e.srcElement.parentNode.parentNode.childNodes[7].innerHTML = changed_row_total_price;
+                    }
+                    else {
+                        e.srcElement.parentNode.parentNode.childNodes[3].innerHTML = changed_row_total_price;
+                    }
+                    //e.parentNode.parentNode.childNodes[7].innerHTML
+                    //console.log(hash_price_item);
+                }
+
+            }
+
+            $source.forEach(function(rowQuant) {
+                rowQuant.addEventListener('input', typeHandler) // register for oninput
+                rowQuant.addEventListener('propertychange', typeHandler) // for IE8
+            });
+
+
+            var cart_total = 0;
+            $('#cart_tbody tr').each(function() {
+                $(this).children('.price_col').each(function() {
+                    cart_total = cart_total + parseInt($(this).html());
+                })
+            });
+            //console.log(cart_total);
+
+
+            var popupHtml;
+            $('#checkout_cart').click(function () {
+                var all_quants = document.querySelectorAll('#quant_col_value');
+                var wrong_quant_strings = '';
+                var wrong_checkout = 0;
+                all_quants.forEach(function(quantValues) {
+                    console.log(quantValues);
+                    console.log(quantValues.parentNode);
+                    console.log(quantValues.parentNode.parentNode);
+                    console.log(quantValues.parentNode.parentNode.childNodes);
+                    var toCheck = "-1";
+                    if (quantValues.parentNode.parentNode.childNodes.length == 5) {
+                        toCheck = quantValues.parentNode.parentNode.childNodes[3].innerHTML;
+                    }
+                    else {
+                        toCheck = quantValues.parentNode.parentNode.childNodes[7].innerHTML;
+                    }
+                    if (toCheck == "") {
+                        wrong_checkout = 1;
+                        wrong_quant_strings = wrong_quant_strings + quantValues.parentNode.parentNode.childNodes[3].innerHTML + " ";
+                    }
+                })
+                if (wrong_checkout == 1) {
+                    alert("Unsupported quantities for " + wrong_quant_strings);
+                    return;
+                }
+                if (!confirm("Are you sure you want to checkout?")) {
+                    return;
+                }
+                if (document.getElementById('customer_name').value === '' || document.getElementById('customer_phone_number').value === '') {
+                    alert("Please enter customer details");
+                    return;
+                }
+                if ($(".cart_items").length == 0) {
+                    alert("Please select atleast 1 item");
+                }
+                else {
+                    arr_id = [];
+                    arr_quantity = [];
+                    var cart_rows_dom = $('#cart_tbody tr');
+                    cart_rows_dom.each(function() {
+                        $(this).children('.quant_col').each(function () {
+                            $(this).children("#quant_col_value").each(function() {
+                                arr_quantity.push($(this).val());
+                            })
+                        })
+                    });
+
+                    cart_rows_dom.each(function() {
+                        $(this).children('.id_col').each(function() {
+                            arr_id.push($(this).html());
+                        })
+                    });
+
+                    $.post("/user/validate/", {'cart_ids': arr_id, 'cart_quants': arr_quantity}, function (data, status) {
+                        console.log(data);
+                        if (data.length > 0) {
+                            alert_string = "The following items are out of stock: " + data;
+                            alert(alert_string);
+                        } else {
+                            $.post("/user/checkout", {
+                                'cart_ids': arr_id,
+                                'cart_quants': arr_quantity,
+                                'customer_name': document.getElementById('customer_name').value,
+                                'customer_phone_number': document.getElementById('customer_phone_number').value
+
+                            }, function (data, status) {
+                                document.getElementById("modal-parent").innerHTML = data;
+                                popupHtml = data;
+                            });
+                        }
+                    });
+                }
+            });
+            $('#cart_tbody').children().on("dblclick", function () {
+                arr = [];
+                $(this).children('.id_col').each(function () {
+                    arr.push($(this).html());
+                });
+                $.post("/user/remove",
+                    {
+                        'selected_items_cart[]': arr
+                    },
+                    function (data, status) {
+
+                        for (var item in data) {
+                            var iter = 0;
+                            var a = $('#cart_tbody tr');
+                            var change_row = null;
+                            a.each(function () {
+                                $(this).children('.id_col').each(function () {
+                                    if (parseInt($(this).html()) == parseInt(data[item].id)) {
+                                        iter = iter + 1;
+                                        change_row = $(this).parent();
+                                        return false;
+                                    }
+                                })
+                            })
+
+                            if (iter == 0) {
+                                var quantity_calculated = 1;
+                                var price_calculated = quantity_calculated * parseFloat(data[item].price);
+                                $('#cart_tbody').append('<tr><td class="id_col">' + data[item].id + '<td>' + data[item].name + '<td class="quant_col">' +
+                                    '<%= number_field_tag('quant_col_value', value = 1, options = {min: 1}).to_s %>'
+                                    + '<td class = "price_col">' + price_calculated + '<td><input class="cart_items" type="checkbox" name="selected_items_cart[]" value=' + data[item].id + '></tr>');
+                            }
+                            else {
+                                change_row.each(function () {
+                                    $(this).children('.quant_col').each(function () {
+                                        $(this).children("#quant_col_value").each(function () {
+                                            exist_q_dom = $(this)
+                                            exist_q = $(this).val()
+                                        })
+                                        exist_q_dom.val(parseInt(exist_q) - 1);
+                                    })
+                                    $(this).children('.price_col').each(function () {
+                                        exist_p = $(this).html();
+                                        var prico = parseFloat(data[item].price);
+                                        var curr = parseFloat(exist_p);
+                                        var newValue = curr - prico;
+                                        $(this).html(newValue.toFixed(1));
+                                        if (parseInt(exist_p) - parseFloat(data[item].price) == 0) {
+                                            //alert("Remove this");
+                                            $(this).parent().remove();
+                                            $('#cart_table_display').trigger('rowAddOrRemove');
+                                        }
+                                    })
+                                })
+                            }
+
+                        }
+
+                        $(".cart_items:checked").each(function () {
+                            $(this).prop("checked", false);
+                        });
+                    });
+
+            });
+
+            $('#independent_tbody').children().dblclick(function () {
+                //$(this).children('.id_col_ind').html();
+                arr = [];
+                $(this).children('.id_col_ind').each(function () {
+                    arr.push($(this).html());
+                });
+                $.post("/user/add",
+                    {
+                        'selected_items[]': arr
+                    },
+                    function (data, status) {
+                        for (var item in data) {
+                            var iter = 0;
+                            var a = $('#cart_tbody tr');
+                            var change_row = null;
+                            a.each(function () {
+                                $(this).children('.id_col').each(function () {
+                                    if (parseInt($(this).html()) == parseInt(data[item].id)) {
+                                        iter = iter + 1;
+                                        change_row = $(this).parent();
+                                        return false;
+                                    }
+                                })
+                            });
+
+                            if (iter == 0) {
+                                var quantity_calculated = 1;
+                                var price_calculated = quantity_calculated * parseFloat(data[item].price);
+                                $('#cart_tbody').append('<tr><td class="id_col">' + data[item].id + '<td>' + data[item].name + '<td class="quant_col">' +
+                                    '<%= number_field_tag('quant_col_value', value = 1, options = {min: 1}).to_s %>'
+                                    + '<td class = "price_col">' + price_calculated + '<td><input class="cart_items" type="checkbox" name="selected_items_cart[]" value=' + data[item].id + '></tr>');
+                                $('#cart_table_display').trigger('rowAddOrRemove');
+
+                            }
+                            else {
+                                change_row.each(function () {
+                                    $(this).children('.quant_col').each(function () {
+                                        $(this).children("#quant_col_value").each(function () {
+                                            exist_q_dom = $(this)
+                                            exist_q = $(this).val()
+                                        })
+                                        exist_q_dom.val(parseInt(exist_q) + 1);
+                                    })
+                                    $(this).children('.price_col').each(function () {
+                                        exist_p = $(this).html();
+                                        var prico = parseFloat(data[item].price);
+                                        var curr = parseFloat(exist_p);
+                                        var newValue = curr + prico;
+                                        $(this).html(newValue.toFixed(1));
+                                    })
+                                })
+                            }
+
+                        }
+                        $(".independent_items:checked").each(function () {
+                            $(this).prop("checked", false);
+                        });
+
+                    });
+
+
+            });
+
+
+            $('#clear_cart').on("click", function () {
+                if ($('#cart_tbody').children().length == 0) {
+                    alert("Cart is already empty");
+                }
+                else {
+                    $.post("/user/clear",
+                        {
+                            "clear": "true"
+                        },
+                        function (data, status) {
+                            $('#cart_tbody').html("");
+                        });
+                }
+            });
+
+
+            $('#remove_from_cart').on("click", function () {
+                if ($(".cart_items:checked").length == 0) {
+                    alert("Please select atleast 1 item");
+                }
+                else {
+                    arr = [];
+                    $(".cart_items:checked").each(function () {
+                        arr.push($(this).val());
+                    });
+                    $.post("/user/remove",
+                        {
+                            'selected_items_cart[]': arr
+                        },
+                        function (data, status) {
+
+                            for (var item in data) {
+                                var iter = 0;
+                                var a = $('#cart_tbody tr');
+                                var change_row = null;
+                                a.each(function () {
+                                    $(this).children('.id_col').each(function () {
+                                        if (parseInt($(this).html()) == parseInt(data[item].id)) {
+                                            iter = iter + 1;
+                                            change_row = $(this).parent();
+                                            return false;
+                                        }
+                                    })
+                                })
+
+                                if (iter == 0) {
+                                    //never enter here
+                                    var quantity_calculated = 1;
+                                    var price_calculated = quantity_calculated * parseFloat(data[item].price);
+                                    $('#cart_tbody').append('<tr><td class="id_col">' + data[item].id + '<td>' + data[item].name + '<td class="quant_col">' +
+                                        '<%= number_field_tag('quant_col_value', value = 1, options = {min: 1}).to_s %>'
+                                        + '<td class = "price_col">' + price_calculated + '<td><input class="cart_items" type="checkbox" name="selected_items_cart[]" value=' + data[item].id + '></tr>');
+                                }
+                                else {
+                                    change_row.each(function () {
+                                        $(this).children('.quant_col').each(function () {
+                                            $(this).children("#quant_col_value").each(function () {
+                                                exist_q_dom = $(this)
+                                                exist_q = $(this).val()
+                                            })
+                                            exist_q_dom.val(parseInt(exist_q) - 1);
+                                        })
+                                        $(this).children('.price_col').each(function () {
+                                            exist_p = $(this).html();
+                                            var prico = parseFloat(data[item].price);
+                                            var curr = parseFloat(exist_p);
+                                            var newValue = curr - prico;
+                                            $(this).html(newValue.toFixed(1));
+                                            if (parseInt(exist_p) - parseFloat(data[item].price) == 0) {
+                                                //alert("Remove this");
+                                                $(this).parent().remove();
+                                                $('#cart_table_display').trigger('rowAddOrRemove');
+                                            }
+                                        })
+                                    })
+                                }
+
+                            }
+
+                            $(".cart_items:checked").each(function () {
+                                $(this).prop("checked", false);
+                            });
+                        });
+                }
+            });
+
+
+            $('#add_to_cart').on("click", function () {
+                if ($(".independent_items:checked").length == 0) {
+                    alert("Please select atleast 1 item");
+                }
+                else {
+                    arr = []
+                    $(".independent_items:checked").each(function () {
+                        arr.push($(this).val())
+                    });
+                    $.post("/user/add",
+                        {
+                            'selected_items[]': arr
+                        },
+                        function (data, status) {
+                            for (var item in data) {
+                                var iter = 0;
+                                var a = $('#cart_tbody tr');
+                                var change_row = null;
+                                a.each(function () {
+                                    $(this).children('.id_col').each(function () {
+                                        if (parseInt($(this).html()) == parseInt(data[item].id)) {
+                                            iter = iter + 1;
+                                            change_row = $(this).parent();
+                                            return false;
+                                        }
+                                    })
+                                })
+
+                                if (iter == 0) {
+                                    var quantity_calculated = 1;
+                                    var price_calculated = quantity_calculated * parseFloat(data[item].price);
+                                    $('#cart_tbody').append('<tr><td class="id_col">' + data[item].id + '<td>' + data[item].name + '<td class="quant_col">' +
+                                        '<%= number_field_tag('quant_col_value', value = 1, options = {min: 1}).to_s %>'
+                                        + '<td class = "price_col">' + price_calculated + '<td><input class="cart_items" type="checkbox" name="selected_items_cart[]" value=' + data[item].id + '></tr>');
+                                    $('#cart_table_display').trigger('rowAddOrRemove');
+                                }
+                                else {
+                                    change_row.each(function () {
+                                        $(this).children('.quant_col').each(function () {
+                                            $(this).children("#quant_col_value").each(function () {
+                                                exist_q_dom = $(this)
+                                                exist_q = $(this).val()
+                                            })
+                                            exist_q_dom.val(parseInt(exist_q) + 1);
+                                        })
+                                        $(this).children('.price_col').each(function () {
+                                            exist_p = $(this).html();
+                                            var prico = parseFloat(data[item].price);
+                                            var curr = parseFloat(exist_p);
+                                            var newValue = curr + prico;
+                                            $(this).html(newValue.toFixed(1));
+                                        })
+                                    })
+                                }
+
+                            }
+                            $(".independent_items:checked").each(function () {
+                                $(this).prop("checked", false);
+                            });
+                        });
+                }
+
+            });
+
+
+            //Think about the modules and code below!!
+
+
+
+
+
+
+            function add_module() {
+                //$(this).children('.id_col_ind').html();
+                arr = [];
+                $(this).children('.id_col_ind').each(function () {
+                    arr.push($(this).html());
+                });
+                $.post("/user/add",
+                    {
+                        'selected_items[]': arr
+                    },
+                    function (data, status) {
+                        for (var item in data) {
+                            var iter = 0;
+                            var a = $('#cart_tbody tr');
+                            var change_row = null;
+                            a.each(function () {
+                                $(this).children('.id_col').each(function () {
+                                    if (parseInt($(this).html()) == parseInt(data[item].id)) {
+                                        iter = iter + 1;
+                                        change_row = $(this).parent();
+                                        return false;
+                                    }
+                                })
+                            })
+
+                            if (iter == 0) {
+                                var quantity_calculated = 1;
+                                var price_calculated = quantity_calculated * parseFloat(data[item].price);
+                                $('#cart_tbody').append('<tr><td class="id_col">' + data[item].id + '<td>' + data[item].name + '<td class="quant_col">' +
+                                    '<%= number_field_tag('quant_col_value', value = 1, options = {min: 1}).to_s %>'
+                                    + '<td class = "price_col">' + price_calculated + '<td><input class="cart_items" type="checkbox" name="selected_items_cart[]" value=' + data[item].id + '></tr>');
+                                $('#cart_table_display').trigger('rowAddOrRemove');
+
+                            }
+                            else {
+                                change_row.each(function () {
+                                    $(this).children('.quant_col').each(function () {
+                                        $(this).children("#quant_col_value").each(function () {
+                                            exist_q_dom = $(this)
+                                            exist_q = $(this).val()
+                                        })
+                                        exist_q_dom.val(parseInt(exist_q) + 1);
+                                    })
+                                    $(this).children('.price_col').each(function () {
+                                        exist_p = $(this).html();
+                                        var prico = parseFloat(data[item].price);
+                                        var curr = parseFloat(exist_p);
+                                        var newValue = curr + prico;
+                                        $(this).html(newValue.toFixed(1));
+                                    })
+                                })
+                            }
+
+                        }
+                        $(".independent_items:checked").each(function () {
+                            $(this).prop("checked", false);
+                        });
+                        $('#cart_tbody').children().dblclick(remove_module());
+
+                    });
+
+
+            }
+
+            function remove_module() {
+                    arr = [];
+                    $(this).children('.id_col').each(function () {
+                        arr.push($(this).html());
+                    });
+                    $.post("/user/remove",
+                        {
+                            'selected_items_cart[]': arr
+                        },
+                        function (data, status) {
+
+                            for (var item in data) {
+                                var iter = 0;
+                                var a = $('#cart_tbody tr');
+                                var change_row = null;
+                                a.each(function () {
+                                    $(this).children('.id_col').each(function () {
+                                        if (parseInt($(this).html()) == parseInt(data[item].id)) {
+                                            iter = iter + 1;
+                                            change_row = $(this).parent();
+                                            return false;
+                                        }
+                                    })
+                                })
+
+                                if (iter == 0) {
+                                    var quantity_calculated = 1;
+                                    var price_calculated = quantity_calculated * parseFloat(data[item].price);
+                                    $('#cart_tbody').append('<tr><td class="id_col">' + data[item].id + '<td>' + data[item].name + '<td class="quant_col">' +
+                                        '<%= number_field_tag('quant_col_value', value = 1, options = {min: 1}).to_s %>'
+                                        + '<td class = "price_col">' + price_calculated + '<td><input class="cart_items" type="checkbox" name="selected_items_cart[]" value=' + data[item].id + '></tr>');
+                                }
+                                else {
+                                    change_row.each(function () {
+                                        $(this).children('.quant_col').each(function () {
+                                            $(this).children("#quant_col_value").each(function () {
+                                                exist_q_dom = $(this)
+                                                exist_q = $(this).val()
+                                            })
+                                            exist_q_dom.val(parseInt(exist_q) - 1);
+                                        })
+                                        $(this).children('.price_col').each(function () {
+                                            exist_p = $(this).html();
+                                            var prico = parseFloat(data[item].price);
+                                            var curr = parseFloat(exist_p);
+                                            var newValue = curr - prico;
+                                            $(this).html(newValue.toFixed(1));
+                                            if (parseInt(exist_p) - parseFloat(data[item].price) == 0) {
+                                                //alert("Remove this");
+                                                $(this).parent().remove();
+                                                $('#cart_table_display').trigger('rowAddOrRemove');
+                                            }
+                                        })
+                                    })
+                                }
+
+                            }
+
+                            $(".cart_items:checked").each(function () {
+                                $(this).prop("checked", false);
+                            });
+                        });
+            }
+
+            $('#cart_table_display').bind('rowAddOrRemove', function (event) {
+                $('#cart_tbody').children().dblclick(remove_module());
+                $('#independent_tbody').children().dblclick(add_module());
+
+            });
+
+        });
+
+        var downloadPDF = function () {
+            var doc = new jsPDF();
+            doc.fromHTML(window.document.getElementById("myModal").innerHTML);
+            doc.save("bill.pdf");
+        };
+
+    </script>
+  <% end %>
+  </body>
+</html>

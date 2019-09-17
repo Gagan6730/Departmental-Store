@@ -1,0 +1,96 @@
+<html>
+<head>
+	<link rel="stylesheet" href="store_controller.scss">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <%= stylesheet_link_tag 'application' %>
+
+</head>
+<body>
+  <div id="DashboardLinksColumn" class="sideElement">
+    <hr>
+    <%= link_to 'Billing', "/user/billing" %>
+  	<hr>
+    <%= link_to 'Inventory', "/dashboard/inventory" %>
+    <hr>
+    <%= link_to 'Orders', "/user/orders" %>
+    <hr>
+    <div class=" active"><%= link_to 'Store Profile', "/dashboard/storedetails/" %></div>
+    <hr>
+  </div>
+  <div class="mainContent" id="main">
+    <div class="success">Your changes have have successfully saved</div>
+    <div class="error">Error occured, changes not saved</div>
+
+    <h1>Edit Store Profile</h1>
+    <br>
+    <%= form_tag("/dashboard/storedetails/", method: "put" ) do %>
+      <div class="field">Registration Number: <%= text_field :store, :registrationNumber, value: @store.registrationNumber, disabled: true, class:'align details' %></div>
+      <br>
+      <div class="field">Shop Name: <%= text_field :store, :shopName, value: @store.shopName, disabled: true ,class:'align details'%></div>
+      <br>
+      <div class="field">Email: <%= text_field :user, :email, value: @user.email, disabled: true,class:'align details' %></div>
+      <br>
+
+      <div class="field">First Name: <%= text_field :user, :firstName, value: @user.firstName , class:'align details' %></div>
+      <br>
+      <div class="field">Last Name: <%= text_field :user, :lastName, value: @user.lastName , class:'align details' %></div>
+      <br>
+      <div class="field">City: <%= text_field :store, :city, value: @store.city, class:'align details' %></div>
+      <br >
+      <div class="field">Locality: <%= text_field :store, :locality, value: @store.locality , class:'align details'%></div>
+      <br>
+      <div class="field">Pin: <%= number_field :store, :pin, value: @store.pin, min: 0, class:'align details' %></div>
+      <br>
+      <br>
+      <span>
+        <%= submit_tag("Update", class:'update search-item') %>
+      <% end %>
+      <input id="reset_button" type="button" value="Reset" class="update search-item"/>
+      </span>
+
+  </div>
+
+  <script>
+      $(function(){
+          $('.sideElement a').click(function() {
+              $(this).toggleClass('active');
+              $(this).toggleClass('inactive');
+          });
+
+          var changes = <%= @changesMade %>;
+          changes = changes+"";
+
+          if (changes !="null") {
+              if (changes=="true") {
+                  $('div.success').css("display", "inline");
+                  $('div.error').css("display", "none");
+              }
+              else {
+                  $('div.success').css("display", "none");
+                  $('div.error').css("display", "inline");
+              }
+          }
+          else {
+              $('div.success').css("display", "none");
+              $('div.error').css("display", "none");
+          }
+
+          var u_fn = '<%= @user.firstName.to_s%>' + "";
+          var u_ln = '<%= @user.lastName.to_s%>'+ "";
+          var s_city = '<%= @store.city.to_s%>'+ "";
+          var s_loc = '<%= @store.locality.to_s%>'+ "";
+          var s_pin = '<%= @store.pin.to_s%>'+ "";
+
+          $('#reset_button').click(function() {
+              $('#user_firstName').val(u_fn);
+              $('#user_lastName').val(u_ln);
+              $('#store_city').val(s_city);
+              $('#store_locality').val(s_loc);
+              $('#store_pin').val(parseInt(s_pin));
+          });
+
+      });
+  </script>
+
+</body>
+</html>

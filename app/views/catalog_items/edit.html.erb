@@ -1,0 +1,35 @@
+<html>
+<head>
+  <link rel="stylesheet" href="store_controller.scss">
+</head>
+<body>
+<div id="DashboardLinksColumn" class="sideElement">
+  <hr>
+  <%= link_to 'Billing', "/user/billing" %>
+  <hr>
+  <div class=" active"><%= link_to 'Inventory', "/dashboard/inventory" %></div>
+  <hr>
+  <%= link_to 'Orders', "/user/orders" %>
+  <hr>
+  <%= link_to 'Store Profile', "/dashboard/storedetails/" %>
+  <hr>
+</div>
+<div class="mainContent" id="main">
+  <h1>Edit inventory details for <%= @catalog_item.name%></h1>
+  <br>
+  <!--<h2>Compulsory to Fill in All the Fields</h2>-->
+  <%= form_for :catalog_item, options = {method: :put, url: catalog_item_path(@catalog_item)}  do |f| %>
+    Name: <%= f.text_field :name , class:'align details'%><br />
+    <br>
+    Quantity : <%= f.number_field :qty, options = {min: 0, class:'align details'}  %><br />
+    <br>
+    Category: <%= f.select :category_id, Category.all.collect { |c| [ c.category_name.titleize, c.id ] }, {include_blank: 'Select Category'}  , class:'align details'%><br>
+    <br>
+    Price    : <%= f.number_field :price, options = {min: 0, class:'align details'} %><br />
+    <br>
+    <%= f.submit "Save Catalog Item", class: 'update search-item'%>
+  <% end %>
+
+</div>
+</body>
+</html>

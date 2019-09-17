@@ -1,0 +1,63 @@
+// Place all the styles related to the add_inventory controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+.search
+{
+  display: inline;
+  margin-right: 10px;
+  margin-left: 10px;
+  //height: 50px;
+
+}
+.search-item
+{
+  border-radius: 3px;
+  //height: 30px;
+}
+input.search-item
+{
+  padding-left: 10px;
+  padding-right: 10px;
+  font-weight: bold;
+  font-size: small;
+  margin-right: 5px;
+}
+
+.align
+{
+  position: absolute;
+  left: 400px;
+  width: 200px;
+  border-radius: 3px;
+  padding-left: 3px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  height: 30px;
+}
+
+.update
+{
+  background-color: #2E2F30;
+  color: #fefefe ;
+  padding: 5px 5px 5px 5px;
+  margin-right: 20px;
+
+}
+.field
+{
+  text-decoration: underline;
+}
+.details
+{
+  font-weight: bold ;
+}
+
+.success {
+  color: green;
+  display: none;
+}
+
+.error {
+  color: red;
+  display: none;
+}

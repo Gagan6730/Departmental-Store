@@ -1,0 +1,53 @@
+<html>
+<head>
+  <link rel="stylesheet" href="store_controller.scss">
+</head>
+<body>
+<div id="DashboardLinksColumn" class="sideElement">
+  <hr>
+  <%= link_to 'Billing', "/user/billing" %>
+  <hr>
+  <div class=" active"><%= link_to 'Inventory', "/dashboard/inventory" %></div>
+  <hr>
+  <%= link_to 'Orders', "/user/orders" %>
+  <hr>
+  <%= link_to 'Store Profile', "/dashboard/storedetails/" %>
+  <hr>
+</div>
+<div class="mainContent" id="main">
+  <h1>Add New Inventory</h1>
+  <br>
+  <!--<h2>Compulsory to Fill in All the Fields</h2>-->
+  <%= form_tag(add_inventory_index_path) do %>
+    <p >
+      Name of Item*:
+      <%= text_field :catalog_item, :name, :required=> true , class: 'align details'%>
+      <br>
+    </p>
+    <br>
+    <p >
+      Quantity*:
+      <%= number_field :catalog_item, :qty, options = {min: 0, required: true , class: 'align details'} %>
+      <br>
+    </p>
+    <br>
+    <p >
+      Category*:
+      <%= select(:catalog_item, :category_id, @categories.collect {|c| [c.category_name.titleize, c.id]}, {prompt: 'Select Category'}, class:'align details') %>
+      <br>
+    </p>
+    <br>
+    <p >
+      Price*:
+      <%= number_field :catalog_item, :price, options = {min: 0, required: true , class: 'align details'} %>
+      <br>
+    </p>
+    <br>
+    <div>
+      <%= submit_tag("Submit", class: 'update search-item')%>
+    </div>
+
+  <% end %>
+</div>
+</body>
+</html>

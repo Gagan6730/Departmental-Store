@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="store_controller.scss">
+<div id="DashboardLinksColumn" class="sideElement">
+  <hr>
+  <%= link_to 'Billing', "/user/billing" %>
+  <hr>
+  <%= link_to 'Inventory', "/dashboard/inventory" %>
+  <hr>
+  <div class=" active"><%= link_to 'Orders', "/user/orders" %></div>
+  <hr>
+  <%= link_to 'Store Profile', "/dashboard/storedetails/" %>
+  <hr>
+</div>
+<div class="mainContent" id="main">
+  <br>
+  <%= form_tag user_orders_path, :method => :get, :id => "orders_search" do %>
+    <%= text_field_tag :search, params[:search], placeholder: 'Search Item', class: 'search-item' %>
+    <%= submit_tag "Search", :name => nil, class: 'update search-item' %>
+  <% end %>
+  <br>
+  <h1>List of Orders</h1>
+  <br>
+  <br>
+  <br>
+  <table border="1">
+    <thead>
+    <tr>
+      <th> Customer Name</th>
+      <th> Customer Phone number</th>
+      <th> Date</th>
+      <th> Bill no.</th>
+      <th> Amount(Rs. )</th>
+    </tr>
+    </thead>
+    <tbody>
+    <% @orders.each do |order| %>
+      <tr>
+
+        <td><%= order.customer.name %></td>
+        <td><%= order.customer.phone_number %></td>
+        <td><%= order.date %></td>
+        <td><%= order.id %></td>
+        <td> <%= order.total %></td>
+      </tr>
+    <% end %>
+    </tbody>
+  </table>
+  <%= will_paginate @orders %>
+</div>
+
+<script>
+  $(function(){
+
+  });
+</script>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Department Store</title>
+  <link rel="stylesheet" href="/style_application.css">
+  <%= stylesheet_link_tag 'application' %>
+  <%= javascript_include_tag 'application' %>
+  <%=  %>
+</head>
+<body>
+<header class="hdr">
+  <div class="navController">
+    <span class="dsImage">
+      <img alt="DS"  src="/logo.png" class="img">
+    </span>
+    <span class="name">
+      Departmental Store
+    </span>
+    <% if (session.key?("current_store_id")) %>
+     <span class="logout">
+       <input id="logout-user" type="button" value="Logout"/>
+     </span>
+      <span id="date_and_time">
+        <div id = "header_date">Date: </div>
+        <div id = "header_time">Time: </div>
+      </span>
+    <% end %>
+  </div>
+</header>
+<div>
+<%= yield %>
+</div>
+<footer class="ftr">
+    <span class="ftrTxt">
+      &copy; IIIT Delhi | Team 2
+    </span>
+</footer>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<html>
+<head>
+  <link rel="stylesheet" href="store_controller.scss">
+</head>
+<body>
+  <div id="DashboardLinksColumn" class="sideElement">
+    <%= link_to 'Store Profile', "/dashboard/storedetails/" + @store.id.to_s%>
+  <hr>
+    <div class=" active"><%= link_to 'Billing', "/user/billing/" + @store.id.to_s%></div>
+    <hr>
+  </div>
+
+  <%= link_to 'Orders', "/user/orders" %>
+  <hr>
+  <div class="mainContent" id="main">
+    <h2>Billing</h2>
+  </div>
+</body>
+</html>
